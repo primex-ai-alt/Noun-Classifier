@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noun Classifier Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 600px;
+            height: 700px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #90EE90 100%);
+            border: 4px solid #333;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Speed lines */
+        .speed-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .speed-line {
+            position: absolute;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            left: 0;
+            right: 0;
+        }
+
+        /* Noun Display */
+        #nounDisplay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 20px 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            z-index: 150;
+            min-width: 300px;
+            text-align: center;
+            border: 3px solid #FF8C00;
+            animation: nounAppear 0.3s ease-out;
+        }
+
+        @keyframes nounAppear {
+            from {
+                transform: translateX(-50%) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Road markings */
+        .road-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: white;
+            opacity: 0.5;
+        }
+
+        /* Tunnels Container */
+        .tunnel-row {
+            position: absolute;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            padding: 0 20px;
+            left: 0;
+        }
+
+        .tunnel-wrapper {
+            position: relative;
+            width: 28%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .tunnel-label {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            text-align: center;
+            width: 90%;
+            margin-bottom: 6px;
+        }
+
+        .tunnel-entrance {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            background: linear-gradient(to bottom, #444 0%, #222 100%);
+            border: 3px solid #555;
+            border-radius: 0 0 12px 12px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .tunnel-entrance::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 100%);
+        }
+
+        /* Car */
+        #car {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 90px;
+            z-index: 100;
+            transition: left 0.08s ease-out;
+        }
+
+        .car-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #FF4444 0%, #CC0000 100%);
+            border-radius: 12px;
+            border: 2px solid #990000;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .car-roof {
+            position: absolute;
+            top: 18px;
+            left: 12px;
+            width: 46px;
+            height: 30px;
+            background: linear-gradient(135deg, #FF6666 0%, #DD0000 100%);
+            border-radius: 6px;
+            border: 2px solid #990000;
+        }
+
+        .car-window {
+            position: absolute;
+            top: 22px;
+            left: 15px;
+            width: 40px;
+            height: 22px;
+            background: #87CEEB;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        .car-headlight {
+            position: absolute;
+            top: 8px;
+            width: 10px;
+            height: 8px;
+            background: #FFFF99;
+            border-radius: 2px;
+        }
+
+        .car-headlight-left {
+            left: 12px;
+            box-shadow: 0 0 8px rgba(255, 255, 153, 0.6);
+        }
+
+        .car-headlight-right {
+            right: 12px;
+            box-shadow: 0 0 8px rgba(255, 255, 153, 0.6);
+        }
+
+        .car-wheel {
+            position: absolute;
+            bottom: -8px;
+            width: 20px;
+            height: 20px;
+            background: #222;
+            border-radius: 50%;
+            border: 2px solid #000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .car-wheel-left {
+            left: 10px;
+        }
+
+        .car-wheel-right {
+            right: 10px;
+        }
+
+        .car-wheel::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: #555;
+            border-radius: 50%;
+        }
+
+        .car-bumper {
+            position: absolute;
+            bottom: 52px;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(to right, #FF9999, #FFCCCC, #FF9999);
+            border-top: 1px solid #990000;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #0F0;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            z-index: 200;
+            border: 2px solid #0F0;
+        }
+
+        #score {
+            margin-bottom: 8px;
+        }
+
+        #lives {
+            color: #FF4444;
+            font-weight: bold;
+        }
+
+        /* Instructions */
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 300;
+            max-width: 420px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        #instructions h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        #instructions p {
+            color: #666;
+            margin-bottom: 12px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+
+        #instructions button {
+            margin-top: 25px;
+            padding: 12px 35px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+
+        #instructions button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Game Over Screen */
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 250;
+            color: white;
+            text-align: center;
+        }
+
+        #gameOverScreen.show {
+            display: flex;
+        }
+
+        #gameOverScreen h1 {
+            font-size: 56px;
+            margin-bottom: 20px;
+            color: #FF4444;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            to { font-size: 62px; }
+        }
+
+        #gameOverScreen p {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        #gameOverScreen button {
+            margin-top: 30px;
+            padding: 14px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: bold;
+        }
+
+        #gameOverScreen button:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Crash animation */
+        @keyframes crash {
+            0%, 100% { transform: translateX(-50%) rotateZ(0deg) scaleY(1); }
+            25% { transform: translateX(-55%) rotateZ(-8deg) scaleY(0.95); }
+            75% { transform: translateX(-45%) rotateZ(8deg) scaleY(0.95); }
+        }
+
+        .crash {
+            animation: crash 0.4s;
+        }
+
+        /* Road perspective effect */
+        .road-perspective {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .road-perspective-left {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 200px 0 0 80px;
+            border-color: transparent transparent transparent rgba(100, 100, 100, 0.5);
+        }
+
+        .road-perspective-right {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 200px 80px 0 0;
+            border-color: transparent rgba(100, 100, 100, 0.5) transparent transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Speed lines effect -->
+        <div class="speed-lines" id="speedLines"></div>
+
+        <!-- Noun Display -->
+        <div id="nounDisplay" class="hidden"></div>
+
+        <!-- Tunnels -->
+        <div id="tunnels-container"></div>
+
+        <!-- Car -->
+        <div id="car">
+            <div class="car-body">
+                <div class="car-headlight car-headlight-left"></div>
+                <div class="car-headlight car-headlight-right"></div>
+                <div class="car-roof"></div>
+                <div class="car-window"></div>
+                <div class="car-bumper"></div>
+                <div class="car-wheel car-wheel-left"></div>
+                <div class="car-wheel car-wheel-right"></div>
+            </div>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div id="score">Score: 0</div>
+            <div id="lives">Lives: ❤️❤️❤️</div>
+        </div>
+
+        <!-- Instructions -->
+        <div id="instructions">
+            <h2>🚗 Noun Classifier</h2>
+            <p><strong>Drive through the correct tunnel!</strong></p>
+            <p>Your car moves forward automatically</p>
+            <p>Use ← LEFT and RIGHT → arrow keys to steer</p>
+            <p>Read the noun and match it to its type:</p>
+            <p>
+                <strong style="color: #4CAF50;">Abstract</strong> | 
+                <strong style="color: #4CAF50;">Proper</strong> | 
+                <strong style="color: #4CAF50;">Common</strong>
+            </p>
+            <p>Don't crash! You have 3 lives.</p>
+            <button onclick="startGame()">START GAME</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen">
+            <h1>💥 CRASH! 💥</h1>
+            <p id="finalScore">Final Score: 0</p>
+            <button onclick="location.reload()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const car = document.getElementById('car');
+        const gameContainer = document.getElementById('gameContainer');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const instructions = document.getElementById('instructions');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const tunnelsContainer = document.getElementById('tunnels-container');
+        const nounDisplay = document.getElementById('nounDisplay');
+        const speedLinesContainer = document.getElementById('speedLines');
+
+        let carPosition = 50; // Center (in percentage)
+        let score = 0;
+        let lives = 3;
+        let gameActive = false;
+        let gameOver = false;
+        let gameTime = 0;
+        let gameSpeed = 2.2;
+
+        // Keyboard state
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Noun data
+        const nouns = [
+            { word: 'happiness', type: 0 },
+            { word: 'John', type: 1 },
+            { word: 'cat', type: 2 },
+            { word: 'freedom', type: 0 },
+            { word: 'London', type: 1 },
+            { word: 'dog', type: 2 },
+            { word: 'justice', type: 0 },
+            { word: 'Sarah', type: 1 },
+            { word: 'table', type: 2 },
+            { word: 'love', type: 0 },
+            { word: 'Paris', type: 1 },
+            { word: 'apple', type: 2 },
+            { word: 'courage', type: 0 },
+            { word: 'Emma', type: 1 },
+            { word: 'book', type: 2 },
+            { word: 'hope', type: 0 },
+            { word: 'Tokyo', type: 1 },
+            { word: 'chair', type: 2 },
+            { word: 'beauty', type: 0 },
+            { word: 'Michael', type: 1 },
+            { word: 'tree', type: 2 },
+            { word: 'sadness', type: 0 },
+            { word: 'Russia', type: 1 },
+            { word: 'pen', type: 2 },
+            { word: 'wisdom', type: 0 },
+            { word: 'Alice', type: 1 },
+            { word: 'flower', type: 2 },
+            { word: 'fear', type: 0 },
+            { word: 'Berlin', type: 1 },
+            { word: 'house', type: 2 }
+        ];
+
+        const tunnelLabels = ['Abstract Noun', 'Proper Noun', 'Common Noun'];
+        let activeTunnels = [];
+        let currentNoun = null;
+
+        function createSpeedLine() {
+            const line = document.createElement('div');
+            line.className = 'speed-line';
+            const yPos = Math.random() * 600;
+            line.style.top = yPos + 'px';
+            line.style.animation = `moveSpeedLine ${1.5 / gameSpeed}s linear forwards`;
+            speedLinesContainer.appendChild(line);
+
+            setTimeout(() => line.remove(), (1.5 / gameSpeed) * 1000);
+        }
+
+        // Add animation keyframes dynamically
+        if (!document.getElementById('speedLineStyles')) {
+            const style = document.createElement('style');
+            style.id = 'speedLineStyles';
+            style.textContent = `
+                @keyframes moveSpeedLine {
+                    from {
+                        opacity: 1;
+                        transform: translateY(-20px);
+                    }
+                    to {
+                        opacity: 0;
+                        transform: translateY(700px);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function createTunnelRow() {
+            const randomIndex = Math.floor(Math.random() * nouns.length);
+            currentNoun = nouns[randomIndex];
+
+            // Update noun display
+            nounDisplay.textContent = currentNoun.word;
+            nounDisplay.classList.remove('hidden');
+
+            const row = document.createElement('div');
+            row.className = 'tunnel-row';
+            row.style.top = '-120px';
+            row.dataset.correctType = currentNoun.type;
+            row.dataset.correctWord = currentNoun.word;
+
+            for (let i = 0; i < 3; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'tunnel-wrapper';
+
+                const label = document.createElement('div');
+                label.className = 'tunnel-label';
+                label.textContent = tunnelLabels[i];
+
+                const entrance = document.createElement('div');
+                entrance.className = 'tunnel-entrance';
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(entrance);
+                row.appendChild(wrapper);
+            }
+
+            tunnelsContainer.appendChild(row);
+            activeTunnels.push({
+                element: row,
+                position: -120,
+                correctType: currentNoun.type
+            });
+
+            return row;
+        }
+
+        function startGame() {
+            instructions.classList.add('hidden');
+            gameActive = true;
+            gameOver = false;
+            score = 0;
+            lives = 3;
+            carPosition = 50;
+            gameTime = 0;
+            car.style.left = carPosition + '%';
+            updateHUD();
+            
+            // Create first tunnel
+            createTunnelRow();
+            
+            gameLoop();
+        }
+
+        function updateHUD() {
+            scoreDisplay.textContent = 'Score: ' + score;
+            const heartEmojis = '❤️'.repeat(Math.max(0, lives));
+            livesDisplay.textContent = 'Lives: ' + heartEmojis;
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOver = true;
+            document.getElementById('finalScore').textContent = 'Final Score: ' + score;
+            gameOverScreen.classList.add('show');
+        }
+
+        function checkCollision(tunnel) {
+            const containerRect = gameContainer.getBoundingClientRect();
+            const carRect = car.getBoundingClientRect();
+            const tunnelRect = tunnel.element.getBoundingClientRect();
+
+            // Check if tunnel is in collision zone (car position)
+            if (tunnelRect.bottom > containerRect.bottom - 100 && tunnelRect.bottom < containerRect.bottom) {
+                let playerPosition = Math.round((carPosition - 7.5) / 33.33);
+                if (playerPosition < 0) playerPosition = 0;
+                if (playerPosition > 2) playerPosition = 2;
+
+                return {
+                    hit: true,
+                    correct: playerPosition === tunnel.correctType
+                };
+            }
+
+            return { hit: false };
+        }
+
+        function gameLoop() {
+            if (!gameActive || gameOver) return;
+
+            gameTime++;
+
+            // Create speed lines
+            if (gameTime % 5 === 0) {
+                createSpeedLine();
+            }
+
+            // Handle steering
+            if (keys['ArrowLeft'] && carPosition > 10) {
+                carPosition -= 2.5;
+            }
+            if (keys['ArrowRight'] && carPosition < 90) {
+                carPosition += 2.5;
+            }
+
+            car.style.left = carPosition + '%';
+
+            // Update tunnel positions and check collisions
+            for (let i = activeTunnels.length - 1; i >= 0; i--) {
+                const tunnel = activeTunnels[i];
+                tunnel.position += gameSpeed;
+                tunnel.element.style.top = tunnel.position + 'px';
+
+                // Check collision
+                const collision = checkCollision(tunnel);
+                if (collision.hit) {
+                    if (collision.correct) {
+                        score += 10;
+                    } else {
+                        lives--;
+                        car.classList.add('crash');
+                        setTimeout(() => car.classList.remove('crash'), 400);
+
+                        if (lives <= 0) {
+                            endGame();
+                            return;
+                        }
+                    }
+                    
+                    updateHUD();
+
+                    // Remove tunnel and create new one
+                    tunnel.element.remove();
+                    activeTunnels.splice(i, 1);
+                    createTunnelRow();
+                } else if (tunnel.position > 700) {
+                    // Remove tunnel if it's off screen
+                    tunnel.element.remove();
+                    activeTunnels.splice(i, 1);
+                }
+            }
+
+            // Increase difficulty slightly over time
+            if (gameTime % 300 === 0 && gameSpeed < 4) {
+                gameSpeed += 0.3;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
